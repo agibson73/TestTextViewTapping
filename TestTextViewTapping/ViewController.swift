@@ -42,7 +42,6 @@ class ViewController: UIViewController {
     @IBAction func nextPhraseDidPress(sender: UIButton) {
         
         //reset count if
-        println("\(count)")
         if count == self.phrases.count-1{
            count = 0
         }
@@ -59,8 +58,8 @@ class ViewController: UIViewController {
     func setTextViewText(){
         
         let phrase = phrases[count] as String
-        
-        if let range = self.rangeIfSwiftInString(phrase, find: "swift"){
+        let ranges = self.rangeIfSwiftInString(phrase, find: "swift")
+        if ranges.count > 0{
             
             
             
@@ -77,9 +76,11 @@ class ViewController: UIViewController {
             let attributedString = NSMutableAttributedString(string:stringToAttribute,attributes:
                 [NSFontAttributeName: font!, NSForegroundColorAttributeName: fontTopColor])
             
-            // make swift red
-            attributedString.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: range)
-            
+            for ran in ranges{
+                let range = ran as NSRange
+                // make swift red
+                attributedString.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: range)
+            }
             // set our label
             textView.attributedText = attributedString
             textView.textAlignment = NSTextAlignment.Center
@@ -106,10 +107,13 @@ class ViewController: UIViewController {
     }
     
     
-    func rangeIfSwiftInString(str : String , find : String)->NSRange?{
+    func rangeIfSwiftInString(str : String , find : String)->NSArray{
         
         // may be optional
-        var rangeOfSwift : NSRange?
+        //var rangeOfSwift : NSRange?
+        
+        var ranges = NSMutableArray()
+        
         
         // may be best if you want it to not be case sensitive
         if str.lowercaseString.rangeOfString(find) != nil {
@@ -118,13 +122,13 @@ class ViewController: UIViewController {
             // find the range and print
             let stringAsNSString = str.lowercaseString as NSString
             let textRange = NSMakeRange(0, stringAsNSString.length)
-
+            
             stringAsNSString.enumerateSubstringsInRange(textRange, options: NSStringEnumerationOptions.ByWords, usingBlock: { substring, subStringRange, enclosingRange, stop in
                 
                 if substring == find{
-                    println("\(subStringRange)")
-                    // call tap method
-                    rangeOfSwift = subStringRange
+                    println("Range is \(subStringRange)")
+                    
+                    ranges.addObject(subStringRange)
                     
                 }
                 
@@ -133,7 +137,7 @@ class ViewController: UIViewController {
         }
         
         // remember to check for optional
-        return rangeOfSwift
+        return ranges
         
     }
     
@@ -142,67 +146,70 @@ class ViewController: UIViewController {
     func textViewTapped(sender:UITapGestureRecognizer){
         
         let phrase = phrases[count] as String
+        var ranges = self.rangeIfSwiftInString(phrase, find: "swift")
         
-        if let rangeOfSwift = self.rangeIfSwiftInString(phrase, find: "swift"){
-            
-        
-        
-        let textView = sender.view as UITextView
-        let layoutManager = textView.layoutManager
-        let location = sender.locationInView(textView)
-        var characterIndex : Int!
-        characterIndex = layoutManager.characterIndexForPoint(location, inTextContainer: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
-        
-        if (characterIndex < textView.textStorage.length) {
-            // valid index
-            // Find the word range here
-            // using -enumerateSubstringsInRange:options:usingBlock:
+        if ranges.count > 0{
             
             
-            var range = NSRange(location: 0, length: 0)
             
-            var attributes = textView.textStorage.attributesAtIndex(characterIndex, effectiveRange: &range)
+            let textView = sender.view as UITextView
+            let layoutManager = textView.layoutManager
+            let location = sender.locationInView(textView)
+            var characterIndex : Int!
+            characterIndex = layoutManager.characterIndexForPoint(location, inTextContainer: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
             
-            // need to find a better way than to hardcode
-            if range.location == rangeOfSwift.location && range.length == rangeOfSwift.length{
-                
-                // attributed text for social label
-                // create attributed text to set our category images
-                
-                let fontTopColor : UIColor = UIColor.grayColor()
-                let swiftColor = UIColor.greenColor()
-                
-                let font = UIFont(name: "AvenirNext-Regular", size: 15)
-                
-                // have to use carriage return for two lines
-                var stringToAttri = phrase
+            if (characterIndex < textView.textStorage.length) {
+                // valid index
+                // Find the word range here
+                // using -enumerateSubstringsInRange:options:usingBlock:
                 
                 
-                let topAttri = NSMutableAttributedString(string:stringToAttri,attributes:
-                    [NSFontAttributeName: font!, NSForegroundColorAttributeName: fontTopColor])
+                var range = NSRange(location: 0, length: 0)
                 
-                // make swift blink green
-                topAttri.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: rangeOfSwift)
+                var attributes = textView.textStorage.attributesAtIndex(characterIndex, effectiveRange: &range)
                 
-                // set our label
-                textView.attributedText = topAttri
-                textView.textAlignment = NSTextAlignment.Center
-                
-                
-                // perform delay and change back
-                self.delay(0.20, closure: {
-                   
-                    self.animateViewColor()
-                    self.resetCurrentText(phrase, rangeOfSwift: rangeOfSwift)
-                    
-                    
-                })
-                
-                
+                for rnge in ranges{
+                    let rangeOfSwift = rnge as NSRange
+                    // need to find a better way than to hardcode
+                    if range.location == rangeOfSwift.location && range.length == rangeOfSwift.length{
+                        
+                        // attributed text for social label
+                        // create attributed text to set our category images
+                        
+                        let fontTopColor : UIColor = UIColor.grayColor()
+                        let swiftColor = UIColor.greenColor()
+                        
+                        let font = UIFont(name: "AvenirNext-Regular", size: 15)
+                        
+                        // have to use carriage return for two lines
+                        var stringToAttri = phrase
+                        
+                        
+                        let topAttri = NSMutableAttributedString(string:stringToAttri,attributes:
+                            [NSFontAttributeName: font!, NSForegroundColorAttributeName: fontTopColor])
+                        
+                        // make swift blink green
+                        topAttri.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: rangeOfSwift)
+                        
+                        // set our label
+                        textView.attributedText = topAttri
+                        textView.textAlignment = NSTextAlignment.Center
+                        
+                        
+                        // perform delay and change back
+                        self.delay(0.20, closure: {
+                            
+                            self.animateViewColor()
+                            self.resetCurrentText(phrase, ranges: ranges)
+                            
+                            
+                        })
+                        
+                        
+                    }
+                }
             }
             
-        }
-        
         }
         else
         {
@@ -221,8 +228,8 @@ class ViewController: UIViewController {
             ),
             dispatch_get_main_queue(), closure)
     }
-    
-    func resetCurrentText(currentText : String, rangeOfSwift : NSRange){
+    func resetCurrentText(currentText : String, ranges : NSArray){
+        
         
         let stringToAttri = currentText
         // attributed text for social label
@@ -233,11 +240,15 @@ class ViewController: UIViewController {
         
         let font = UIFont(name: "AvenirNext-Regular", size: 15)
         // reset the string
+        
         let topAttri = NSMutableAttributedString(string:stringToAttri,attributes:
             [NSFontAttributeName: font!, NSForegroundColorAttributeName: fontTopColor])
-        // make swift red again
-        topAttri.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: rangeOfSwift)
         
+        for range in ranges{
+            let rangeOfSwift = range as NSRange
+            // make swift red again
+            topAttri.addAttribute(NSForegroundColorAttributeName, value: swiftColor, range: rangeOfSwift)
+        }
         // set our label
         textView.attributedText = topAttri
         textView.textAlignment = NSTextAlignment.Center
